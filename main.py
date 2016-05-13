@@ -1,13 +1,11 @@
-#loads the contents of the lib folder to elastic search
+#/loads the contents of the lib folder to elastic search
 from elasticsearch import Elasticsearch
 es = Elasticsearch()
 
-import json
+import ujson
 import requests
 import urllib
 
-import pprint
-pp = pprint.PrettyPrinter(indent=4)
 #global defs
 port = 'http://localhost:9200'
 database = 'puamapi'
@@ -15,121 +13,165 @@ wrapperbase = 'puamapi_wrapper'
 
 #maps each table name to its associated id
 api_tables = [
-    "apiobjects_american", 
-    "apiconstituents_american"
-    #"apibibliography_american", 
-    #"apiexhibitions_american"
+    "apiobjects", 
+    "apiconstituents",
+    "apibibliography" 
+    #"apiexhibitions"
 
-    #"apiobjgeograph_american"
+    #"apiobjgeography"
 ]
 
 api_xrefs = [
-    "apiobjconxrefs_american", 
-    "apiobjbibxrefs_american", 
-    "apiobjexhxrefs_american",
+    # for objects
+    "apiobjconxrefs", 
+    "apiobjbibxrefs", 
+    "apiobjexhxrefs",
 
-    "apiobjdimxrefs_american",
-    "apiobjtermsxrefs_american",
-    "apiobjgeograph_american",
-    "apiobjmediaxrefs_american",
-    "apiobjtitlexrefs_american"
+    "apiobjdimxrefs",
+    #"apiobjtermsxrefs",
+    #"apiobjgeography",
+    "apiobjmediaxrefs",
+    "apiobjtitlexrefs",
 
+    # for constituents 
+    "apiconaltnames",
+    "apiconuris",
+
+    #for bibliography
+    "apibibaltnums"
 ]
 
 table_xref_map = {
-    "apiobjects_american": [
-        "apiconstituents_american", 
-        "apibibliography_american", 
-        "apiexhibitions_american",
+    "apiobjects": [
+        "apiconstituents", 
+        "apibibliography", 
+        "apiexhibitions",
         
-        "apiobjdimxrefs_american",
-        "apiobjgeograph_american",
-        "apiobjtermsxrefs_american",
-        "apiobjtitlexrefs_american",
-        "apiobjmediaxrefs_american"
+        "apiobjdimxrefs",
+      #  "apiobjgeography",
+       # "apiobjtermsxrefs",
+        "apiobjtitlexrefs",
+        "apiobjmediaxrefs"
     ], 
     
-    "apiconstituents_american": [
-        "apiobjects_american"
+    "apiconstituents": [
+        "apiobjects",
+        "apiconaltnames",
+        "apiconuris"
+    ],
+
+    "apibibliography":[
+	"apibibaltnums"
     ]
 }
 
 xref_map = {
-    "apiobjconxrefs_american":[
-        "apiobjects_american", 
-        "apiconstituents_american"
+#objects
+    "apiobjconxrefs":[
+        "apiobjects", 
+        "apiconstituents"
     ], 
 
-    "apiobjbibxrefs_american":[
-        "apiobjects_american", 
-        "apibibliography_american"
+    "apiobjbibxrefs":[
+        "apiobjects", 
+        "apibibliography"
     ],
 
-    "apiobjdimxrefs_american":[
-        "apiobjects_american",
-        "apiobjdimxrefs_american"
+    "apiobjdimxrefs":[
+        "apiobjects",
+        "apiobjdimxrefs"
     ],
 
-    "apiobjexhxrefs_american":[
-        "apiobjects_american", 
-        "apiexhibitions_american"
+    "apiobjexhxrefs":[
+        "apiobjects", 
+        "apiexhibitions"
     ],
 
-    "apiobjtermsxrefs_american":[
-        "apiobjects_american",
-        "apiobjtermsxrefs_american"
+   # "apiobjtermsxrefs":[
+   #     "apiobjects",
+   #     "apiobjtermsxrefs"
+   # ],
+
+   # "apiobjgeography":[
+   #     "apiobjects",
+   #     "apiobjgeography"
+   # ],
+
+
+    "apiobjtitlexrefs":[
+        "apiobjects",
+        "apiobjtitlexrefs"
     ],
 
-    "apiobjgeograph_american":[
-        "apiobjects_american",
-        "apiobjgeograph_american"
+    "apiobjmediaxrefs":[
+        "apiobjects",
+        "apiobjmediaxrefs"
     ],
 
-
-    "apiobjtitlexrefs_american":[
-        "apiobjects_american",
-        "apiobjtitlexrefs_american"
+#constituents
+    "apiconaltnames":[
+    	"apiconstituents", 
+	"apiconaltnames"
     ],
 
-    "apiobjmediaxrefs_american":[
-        "apiobjects_american",
-        "apiobjmediaxrefs_american"
+    "apiconuris":[
+        "apiconstituents",
+	"apiconuris"
+    ],
+
+    "apibibaltnums":[
+	"apibibliography",
+	"apibibaltnums"
     ]
 }
 
 name_map = {
-    "apiobjects_american":"Objects", 
-    "apiconstituents_american":"Constituents", 
-    "apibibliography_american":"Bibliography", 
-    "apiexhibitions_american":"Exhibitions",
+    "apiobjects":"Objects", 
+    "apiconstituents":"Constituents", 
+    "apibibliography":"Bibliography", 
+    "apiexhibitions":"Exhibitions",
     #DimItemElemXrefID
-    "apiobjdimxrefs_american": "Dimensions",
+    "apiobjdimxrefs": "Dimensions",
     #MediaxrefID
-    "apiobjmediaxrefs_american": "Media",
+    "apiobjmediaxrefs": "Media",
     #ThesXrefID
-    "apiobjtermsxrefs_american":"Terms",
-    "apiobjtitlexrefs_american":"Titles",
-    "apiobjgeograph_american":"Geography"
+    #"apiobjtermsxrefs":"Terms",
+    "apiobjtitlexrefs":"Titles",
+    #"apiobjgeography":"Geography",
+
+     #for constituents
+    "apiconaltnames":"AltNames",
+    "apiconuris":"URIs",
+
+    #for bibliography
+    "apibibaltnums":"AltBibs"
 }
 
 id_map = {
-    "apiobjects_american":"ObjectID", 
-    "apiconstituents_american": "ConstituentID", 
-    "apiobjconxrefs_american": "ConXrefID", 
-    "apibibliography_american":"ReferenceID", 
-    "apiobjbibxrefs_american":"RefXRefID", 
-    "apiexhibitions_american":"ExhibitionID", 
-    "apiobjexhxrefs_american":"ExhObjXrefID",
+    "apiobjects":"ObjectID", 
+    "apiconstituents": "ConstituentID", 
+    "apiobjconxrefs": "ConXrefID", 
+    "apibibliography":"ReferenceID", 
+    "apiobjbibxrefs":"RefXRefID", 
+    "apiexhibitions":"ExhibitionID", 
+    "apiobjexhxrefs":"ExhObjXrefID",
 
-    "apiobjdimxrefs_american":"DimensionID",
-    "apiobjmediaxrefs_american":"MediaMasterID",
-    "apiobjtermsxrefs_american":"TermID",
-    "apiobjtitlexrefs_american":"TitleID",
-    "apiobjgeograph_american":"ObjGeographyID"
+    "apiobjdimxrefs":"DimensionID",
+    "apiobjmediaxrefs":"MediaMasterID",
+    #"apiobjtermsxrefs":"TermID",
+    "apiobjtitlexrefs":"TitleID",
+    #"apiobjgeography":"ObjGeographyID",
+
+    #constituents
+    "apiconaltnames":"AltNameID",
+    "apiconuris":"AltNumID",
+
+    #bibliography
+    "apibibaltnums":"AltNumID"
 }
 
 #returns an array of json objects for each item in the array
-#ex: get_xref_data("apiobjconxrefs_american", "apiobjects", "2497")
+#ex: get_xref_data("apiobjconxrefs", "apiobjects", "2497")
 #def get_xref_data(xref, table, id):
     #if id == None:
         #return []
@@ -138,7 +180,7 @@ id_map = {
     #query_path = port + "/" + database + "/" + xref + "/" + "_search?q=" + id_name + ":" + str(id)
 
     #request = requests.get(query_path).json()
-    #request = json.load(urllib.urlopen(query_path))["hits"]["hits"]
+    #request = ujson.load(urllib.urlopen(query_path))["hits"]["hits"]
     #data = requests.get(query_path).json()["hits"]["hits"]["_source"]
 
     #result = []
@@ -152,9 +194,11 @@ id_map = {
 
 #takes in an array of objects and loads them
 def load_table(table, records):
+    print("Loading table: " + table)
+
     id_name = id_map[table]
     #returns path of format
-    #http://localhost:9200/puamapi/apiobjects_american/
+    #http://localhost:9200/puamapi/apiobjects/
     port_path = ''.join([port, "/", database, "/", table, "/"])
 
     for record in records:    
@@ -172,22 +216,24 @@ def load_table(table, records):
 
             es.index(index=database, doc_type=table, id=id, body=record)
 
-    print("DONE")
+    print("Load table " + table + ": SUCCESSFUL")
 
 #for each table in tables, reads the file and down
 def load_tables(tables):
     for table in tables:
-        print("loading table " + table)
         file_name = ''.join(["lib/", table, ".json"])
         with open(file_name) as file:
-            load_table(table, json.load(file)["RECORDS"])
+	    print("loading table " + file_name)
+	    json_data = ujson.load(file)
+            records = json_data["RECORDS"]
+            load_table(table,records)
 
 def load_wrapper(table, records):
+    print("Loading wrapper: " + table)
     idname = id_map[table]
 
     for record in records:
         record_id = record[idname]
-        print(record_id)
         #exists in puamapi
         if record_id is not None and es.exists(index=database, doc_type=table, id=record_id):
             #we get the record
@@ -221,13 +267,14 @@ def load_wrapper(table, records):
             #then we put in the wrapper database
             es.index(index=wrapperbase, doc_type=table, id=record_id, body=wrapper)
 
-    print("DONE")
+    print("Loading wrapper "+ table + ": SUCCESSFUL")
 #takes in an array of objects and loads them
 def load_xref(xref, table1, table2, records):
-    #http://localhost:9200/puamapi/apiobjects_american/
+    print("Loading xref: " + xref)
+
+    #http://localhost:9200/puamapi/apiobjects/
     idname1 = id_map[table1]
     idname2 = id_map[table2]
-    
     name1 = name_map[table1]
     name2 = name_map[table2]
   
@@ -243,45 +290,49 @@ def load_xref(xref, table1, table2, records):
     for record in records:    
         id1 = record[idname1]
         id2 = record[idname2]
-        
+	print(id1)
         if update1 and  es.exists(index=database, doc_type=table1, id=id1):
-            print(es.get(index=database, doc_type=table1, id=id1))
             #put the record in its file name 
             data2 = {}
+	    #data2["table"] = name2
             data2["item"] = [id2]
             record1 = {}
-            record1["script"] = script2
+            #record1["script_file"] = "xref_script"
+	    record1["script"] = script2
             record1["params"] = data2
 
-
             es.update(index=database, doc_type=table1, id=id1, body=record1)
+            #es.update(index=database, doc_type=table1, id=id1, body=doc1)
 
         if update2 and es.exists(index=database, doc_type=table2, id=id2):
             data1 = {}
+            #data1["table"] = name1
             data1["item"] = [id1]
             record2 = {}
-            record2["script"] = script1
+	    record2["script"] = script1
+            #record2["script_file"] = "xref_script"
             record2["params"] = data1
 
+	    #doc2 = {"doc": record2}
             es.update(index=database, doc_type=table2, id=id2, body=record2)
+            #es.update(index=database, doc_type=table2, id=id2, body=doc2)
+
+    print("Loading xref " + xref + ": SUCCESSFUL")
 
 #makes a "complete" structure in puamapi_wrapper
 def load_wrappers(tables):
     for table in tables:
-        print("loading wrapper " + table)
         file_name = ''.join(["lib/", table, ".json"])
         with open(file_name) as file:
-            json_file = json.load(file)
+            json_file = ujson.load(file)
             load_wrapper(table, json_file["RECORDS"])
 
 #for each table in tables, reads the file and down
 def load_xrefs(tables):
     for table in tables:
-        print("loading xref " + table)
         file_name = ''.join(["lib/", table, ".json"])
         with open(file_name) as file:
-            json_file = json.load(file)
-            print(xref_map[table])
+            json_file = ujson.load(file)
             load_xref(table, xref_map[table][0], xref_map[table][1], json_file["RECORDS"])
 
 #for each table, gets the file from github and writes it
@@ -291,21 +342,63 @@ def pull_tables(tables):
     for table in tables:
         file_name = ''.join([table, ".json"]) #json filetype
 
-        #https://raw.githubusercontent.com/american-art/PUAM/master/apiobjects_american/apiobjects_american.json
-        url_path = ''.join([base, "/",  table, "/", file_name])
+        #https://raw.githubusercontent.com/american-art/PUAM/master/apiobjects/apiobjects.json
+        url_path = ''.join([base, "/",  file_name])
         file_path = ''.join(["lib/", file_name])
 
-        print("retrieving " + url_path + " to " + file_path)
+	print("Pulling table: " + url_path + " to " + file_path)
         urllib.urlretrieve(url_path, file_path)
-        print("successful")
+        print("Pulling table: successful")
 
-pull_tables(api_tables)
-pull_tables(api_xrefs)
-load_tables(api_xrefs)
-#load_tables(["apibibliography_american", "apiexhibitions_american"])
-load_tables(api_tables)
-#load_xrefs(["apiobjtermsxrefs_american", "apiobjgeograph_american", "apiobjmediaxrefs_american", "apiobjtitlexrefs_american"])
+#download from github
+#pull_tables(api_tables)
+#pull_tables(api_xrefs)
+
+#load them into our database
+#load_tables(api_tables)
+#load_tables(api_xrefs)
+#load external references
+remaining = [
+#    "apiobjtermsxrefs",
+#    "apiobjgeography",
+#    "apiobjmediaxrefs",
+#    "apiobjtitlexrefs",
+
+    # for constituents 
+#    "apiconaltnames",
+#    "apiconuris",
+
+    #for bibliography
+#    "apibibaltnums"
+    # for objects
+#    "apiobjconxrefs", 
+#    "apiobjbibxrefs", 
+#    "apiobjexhxrefs",
+
+#    "apiobjdimxrefs",
+    #"apiobjtermsxrefs",
+#    "apiobjgeography",
+#    "apiobjmediaxrefs",
+#    "apiobjtitlexrefs",
+
+
+    "apiobjmediaxrefs",
+    "apiobjtitlexrefs",
+
+    # for constituents 
+    "apiconaltnames",
+    "apiconuris",
+
+    #for bibliography
+    "apibibaltnums"
+
+]
+
+#load_tables(remaining)
+#load_tables(remaining)
+load_xrefs(api_xrefs)
+#load_xrefs(remaining)
+#load the wrappers
 load_wrappers(api_tables)
 
-#load_xrefs(api_xrefs)
 
