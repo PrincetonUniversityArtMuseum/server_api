@@ -72,7 +72,7 @@ If the page fails to load, we need to restart the elastic search instance.
 
 Navigate to the elastic search directory:
 ```
-cd /usr/local/elasticsearch/elasticsearch2.3.2
+cd /usr/local/elasticsearch/elasticsearch-2.3.2
 ```
 
 From there, we need to start the instance.

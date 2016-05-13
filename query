@@ -1,5 +1,0 @@
-{
-    "query":{
-        "match_all": {"ObjectID": 2497 }
-    }
-}
